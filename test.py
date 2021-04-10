@@ -1,9 +1,12 @@
+#Basic Flask application
 
-def main():
-  print("This is the main function")
-  i = 3
-  x = 9
-  print(i + x)
-  print("end of test")
+from flask import Flask
+app=Flask(__name__)
 
-main()
+@app.route('/')
+def index():
+  return '<h1>Learning Flask</h1>'
+
+@app.route('/user/<name>')
+def user(name):
+  return 'Hello, %s' % format(name)
