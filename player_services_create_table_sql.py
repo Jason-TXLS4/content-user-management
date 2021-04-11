@@ -36,7 +36,7 @@ CREATE TABLE characters
 c.execute('''
 CREATE TABLE items
 (
-    items INTEGER PRIMARY KEY AUTOINCREMENT,
+    items_id INTEGER PRIMARY KEY AUTOINCREMENT,
     character_id INTEGER,
     item_id INTEGER,
     CONSTRAINT FK FOREIGN KEY(character_id) REFERENCES characters(characters_id)
