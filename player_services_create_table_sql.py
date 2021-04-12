@@ -1,8 +1,7 @@
 import sqlite3
 
-conn = sqlite3.connect('player_services.db')  # You can create a new database by changing the name within the quotes
-c = conn.cursor() # The database will be saved in the location where your 'py' file is saved
-
+con = sqlite3.connect('player_services.db')  # You can create a new database by changing the name within the quotes
+c = con.cursor() # The database will be saved in the location where your 'py' file is saved
 
 c.execute('''
 
@@ -54,5 +53,6 @@ CREATE TABLE characters_attributes
  );
 ''')
 
-conn.commit()
-
+con.commit()
+c.close()
+con.close()

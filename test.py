@@ -1,12 +1,20 @@
-#Basic Flask application
+import sqlite3
 
-from flask import Flask
-app=Flask(__name__)
+con = sqlite3.connect('player_services.db')  # You can create a new database by changing the name within the quotes
+c = con.cursor() # The database will be saved in the location where your 'py' file is saved
 
-@app.route('/')
-def index():
-  return '<h1>Learning Flask</h1>'
+c.execute('''
+INSERT INTO players (title) values ("Clark");
+''')
 
-@app.route('/user/<name>')
-def user(name):
-  return 'Hello, %s' % format(name)
+c.execute('''
+INSERT INTO players (title) values ("Bruce");
+''')
+
+c.execute('''
+INSERT INTO players (title) values ("Hal");
+''')
+
+con.commit()
+c.close()
+con.close()
