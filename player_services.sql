@@ -18,7 +18,10 @@ CREATE TABLE characters
 (
 	characters_id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER,
-    title varchar
+    player_id INTEGER,
+    title varchar,
+    CONSTRAINT FK FOREIGN KEY(player_id) REFERENCES players(players_id)
+
 );
 
 CREATE TABLE items
