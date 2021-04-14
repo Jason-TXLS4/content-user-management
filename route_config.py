@@ -37,19 +37,21 @@ def createNewPlayerCharacter(game_id,player_id):
   return jsonify(return_json), 201
   
 
-
-@app.route('/v1/player',methods=['GET'])
-def get_player_data():    
+#1.2 GET /player/<player_id>/character
+#retrieve a list of player characters
+@app.route('/player/<player_id>/character',methods=['GET'])
+def get_player_data(player_id):   
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT * FROM players"
-  cursor.execute(sqli_query)
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id= 123456" #make this a variable
+    cursor.execute(sqli_query)
   result = cursor.fetchall()
   final = []
   for row in result:
-    item = {'id': row[0], 'name': row[1]}
+    item = {'id': row[0], 'title': row[1]}
     final.append(item)
-    return Response(json.dumps(final), status=201,  mimetype='application/json')
+  return jsonify(final), 201
+  
 
 
 #this is a POST method which stores student details
