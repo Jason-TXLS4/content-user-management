@@ -41,7 +41,6 @@ def createNewPlayerCharacter(game_id,player_id):
 #retrieve a list of player characters
 @app.route('/player/<player_id>/character',methods=['GET'])
 def get_player_characters(player_id):  
-  test = "123456" 
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
@@ -51,24 +50,31 @@ def get_player_characters(player_id):
   for row in result:
     item = {'id': row[0], 'title': row[1]}
     final.append(item)
-  return jsonify(final), 201
+  return jsonify(final), 200
   
 
 #1.3 GET  /player/<player_id>/character/<character_id>
-#retrieve player characer details
-@app.route('/player/<player_id>/character/<character_id>',methods=['GET'])
-def get_player_characters_details(player_id, character_id):   
+#retrieve player character details
+@app.route('/player/<player_id>/character/<characters_id>',methods=['GET'])
+def get_player_characters_details(player_id, characters_id):   
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
-    sqli_query = "" 
-    cursor.execute(sqli_query)
-  result = cursor.fetchall()
-  final = []
-  for row in result:
-    item = {}
-    final.append(item)
-  return jsonify(final), 201
+    sqli_query = "SELECT * FROM characters WHERE characters_id=?" 
+    cursor.execute(sqli_query, (characters_id,))
+  result = cursor.fetchone()
+  result_characters_id = result[0]
+  result_game_id = result[1]
+  result_player_id = result[2]
+  result_title = result[3]
 
+  with sqlite3.connect(db_name) as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT * FROM characters_attributes WHERE character_id=?" 
+    cursor.execute(sqli_query, (characters_id,))  
+  result = cursor.fetchone()
+  result_attributes = {"players_attributes_id":result[0],"player_id":result[1],"attr_title":result[2],"attr_value":result[3]}
+  character = {"title":result_title, "id":result_characters_id, "game_id":result_game_id, "player_id":result_player_id, "attributes":result_attributes}
+  return jsonify(character), 200
 
 
 
