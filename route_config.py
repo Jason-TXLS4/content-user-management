@@ -40,11 +40,12 @@ def createNewPlayerCharacter(game_id,player_id):
 #1.2 GET /player/<player_id>/character
 #retrieve a list of player characters
 @app.route('/player/<player_id>/character',methods=['GET'])
-def get_player_data(player_id):   
+def get_player_characters(player_id):  
+  test = "123456" 
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id= 123456" #make this a variable
-    cursor.execute(sqli_query)
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
+    cursor.execute(sqli_query, (test,))
   result = cursor.fetchall()
   final = []
   for row in result:
@@ -53,11 +54,23 @@ def get_player_data(player_id):
   return jsonify(final), 201
   
 
+#1.3 GET  /player/<player_id>/character/<character_id>
+#retrieve player characer details
+@app.route('/player/<player_id>/character/<character_id>',methods=['GET'])
+def get_player_characters_details(player_id, character_id):   
+  with sqlite3.connect(db_name) as conn:
+    cursor = conn.cursor()
+    sqli_query = "" 
+    cursor.execute(sqli_query)
+  result = cursor.fetchall()
+  final = []
+  for row in result:
+    item = {}
+    final.append(item)
+  return jsonify(final), 201
 
-#this is a POST method which stores student details
-@app.route('/v1/player',methods=['POST'])
-def store_student_data():
-  return "Student list[POST]"
+
+
 
 #this method executes after every API request
 @app.after_request
