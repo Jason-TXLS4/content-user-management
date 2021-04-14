@@ -1,7 +1,8 @@
 from flask import Flask
-from flask import Request
+from flask import request
 from flask import Response
 from flask import jsonify
+import requests
 import sqlite3
 import os
 import json
@@ -18,8 +19,10 @@ def sayHello():
 @app.route('/game/<game_id>/player/<player_id>/character', methods=['POST'])
 def createNewPlayerCharacter(game_id,player_id):
   #insert character into db
-  json_data = Request.json
-  title = json_data["title"]
+
+  content = request.get_json()
+  title = content['title']
+
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
     sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
@@ -29,19 +32,12 @@ def createNewPlayerCharacter(game_id,player_id):
   #if the query failed
   if not query:
     abort(409, "Could not create character")
-  
-  #build response json
-    # RESPONSE MODEL - application/json
-    # title string -- take from above
-    # id string -- take from above
-    # game_id string -- take from above
-    # player_id string -- take from above
-    # location string -- null - because we just made the char
-    # attributes object -- null
 
-  return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":null, "attributes":null}
+  return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":"null", "attributes":"null"}
   return jsonify(return_json), 201
   
+
+
 @app.route('/v1/player',methods=['GET'])
 def get_player_data():    
   with sqlite3.connect(db_name) as conn:
