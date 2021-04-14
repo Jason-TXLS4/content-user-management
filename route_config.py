@@ -1,9 +1,11 @@
 from flask import Flask
 from flask import Request
 from flask import Response
+from flask import jsonify
 import sqlite3
 import os
 import json
+
 
 app = Flask(__name__)
 db_name = "player_services.db"
@@ -17,28 +19,32 @@ def sayHello():
 def createNewPlayerCharacter(game_id,player_id):
   #insert character into db
   json_data = Request.json
+  player_id = int(player_id)
   game_id = json_data["game_id"]
   title = json_data["title"]
   with sqlite3.connect(db_name) as conn:
     cursor = conn.cursor()
-    sqli_query = "INSERT INTO characters (game_id, title) VALUES ('"+ title +", " + game_id + "') "
-  query = cursor.execute(sqli_query)
+    sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
+    query = cursor.execute(sqli_query,(game_id, title, player_id))
   #if the query failed
-  if(query == False):
-    return Response(status=500)
+  if not query:
+    abort(409, "Could not create character")
   
   #build response json
     #make a query for data needed
     # RESPONSE MODEL - application/json
-    # title string
+    # title string 
     # id string
     # game_id string
     # player_id string
     # location string
     # attributes object
     #build a python data structure (a list of dicts)
+
+
     #replace the json below here with the json built in the step above
-  return Response("replace this with json.dumps(<jasdata>) ", status=201, mimetype='application/json')
+  
+  return jsonify(jsonData), 201
   
 @app.route('/v1/player',methods=['GET'])
 def get_player_data():    
