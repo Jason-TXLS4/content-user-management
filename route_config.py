@@ -141,7 +141,51 @@ def createNewItem(game_id):
   return_json = {"title":title, "id":items_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes}
   return jsonify(return_json), 201
 
+# 4.3 - retrieve all item details
+@app.route('/game/<game_id>/item/<item_id>',methods=['GET'])
+def get_item(game_id,item_id):   
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT title, description FROM items WHERE game_id=? AND items_id=?" 
+    cursor.execute(sqli_query, (game_id, item_id))
+    result = cursor.fetchone()
+    title = result[0]
+    description = result[1]
+    sqli_query = "SELECT title FROM items_aliases WHERE item_id=?" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
+    cursor.execute(sqli_query, (item_id,))
+    result = cursor.fetchall()
+    aliases = []
+    for r in result: 
+      aliases.append(r[0])
+    sqli_query = "SELECT attr_title, attr_value FROM items_attributes WHERE item_id=?" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
+    cursor.execute(sqli_query, (item_id,))
+    result = cursor.fetchall()
+    attributes = {}
+    for row in result:      
+      attributes[row[0]] = row[1]
 
+  return_json = {"title":title, "id":item_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes} 
+  return jsonify(return_json), 200
+
+# 4.4 update item details
+@app.route('/game/<game_id>/item/<item_id>', methods=['PUT'])
+def updateItemDetails(game_id,item_id):
+
+  # content = request.get_json()
+  # title = content['title']
+
+  # with sqlite3.connect(players_db) as conn:
+  #   cursor = conn.cursor()
+  #   sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
+  #   query = cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
+  #   if query != False:#not sure if this if is needed, but i figured if the insert didn't work, I shouldn't get the lastrowid
+  #     characters_id = cursor.lastrowid #this gets the characters_id
+  # #if the query failed
+  # if not query:
+  #   abort(409, "Could not create character")
+
+  # return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":"null", "attributes":"null"}
+  # return jsonify(return_json), 200
 
 #this method executes after every API request
 @app.after_request
