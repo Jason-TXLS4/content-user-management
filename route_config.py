@@ -9,7 +9,8 @@ import json
 
 
 app = Flask(__name__)
-db_name = "player_services.db"
+players_db = "player_services.db"
+content_db = "content_services.db"
 
 @app.route('/')
 def sayHello():
@@ -23,7 +24,7 @@ def createNewPlayerCharacter(game_id,player_id):
   content = request.get_json()
   title = content['title']
 
-  with sqlite3.connect(db_name) as conn:
+  with sqlite3.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
     query = cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
@@ -41,7 +42,7 @@ def createNewPlayerCharacter(game_id,player_id):
 #retrieve a list of player characters
 @app.route('/player/<player_id>/character',methods=['GET'])
 def get_player_characters(player_id):  
-  with sqlite3.connect(db_name) as conn:
+  with sqlite3.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
     cursor.execute(sqli_query, (test,))
@@ -57,7 +58,7 @@ def get_player_characters(player_id):
 #retrieve player character details
 @app.route('/player/<player_id>/character/<characters_id>',methods=['GET'])
 def get_player_characters_details(player_id, characters_id):   
-  with sqlite3.connect(db_name) as conn:
+  with sqlite3.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT * FROM characters WHERE characters_id=?" 
     cursor.execute(sqli_query, (characters_id,))
@@ -67,7 +68,7 @@ def get_player_characters_details(player_id, characters_id):
   result_player_id = result[2]
   result_title = result[3]
 
-  with sqlite3.connect(db_name) as conn:
+  with sqlite3.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT * FROM characters_attributes WHERE character_id=?" 
     cursor.execute(sqli_query, (characters_id,))  
@@ -76,7 +77,25 @@ def get_player_characters_details(player_id, characters_id):
   character = {"title":result_title, "id":result_characters_id, "game_id":result_game_id, "player_id":result_player_id, "attributes":result_attributes}
   return jsonify(character), 200
 
+#get 1.4 from Laura
 
+
+# 4.1 - Retrieve all items
+# GET  /game/<game>/item   
+@app.route('/game/<game_id>/item',methods=['GET'])
+def get_all_items(game_id):   
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT items_id, title FROM items WHERE game_id=?" 
+    cursor.execute(sqli_query, (game_id,))
+  result = cursor.fetchall()
+  return_json = []
+  for row in result:
+    item = {'id': row[0], 'title': row[1]}
+    return_json.append(item)
+  return jsonify(return_json), 200
+
+ 
 
 #this method executes after every API request
 @app.after_request

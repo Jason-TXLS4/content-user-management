@@ -8,6 +8,7 @@ c.execute('''
 CREATE TABLE items
 (
   items_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id INTEGER,
   title varchar,
   description varchar
 );
