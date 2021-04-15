@@ -95,7 +95,53 @@ def get_all_items(game_id):
     return_json.append(item)
   return jsonify(return_json), 200
 
- 
+
+# 4.2 add a new item to a game
+# POST  /game/<game_id>/item 
+@app.route('/game/<game_id>/item', methods=['POST'])
+def createNewItem(game_id):
+
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  aliases = content['aliases']#array
+  attributes = content['attributes']#object
+  
+  #3 inserts
+  # 1. insert items -> title, desc, game_id
+  # !!get the lastrowid
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "INSERT INTO items (game_id, title, description) VALUES (?,?,?)"
+    query = cursor.execute(sqli_query,(int(game_id), title, description))
+    if query != False: 
+      items_id = cursor.lastrowid
+  #if the query failed
+  if not query:
+    abort(409, "Could not create item")
+
+  # 2. loop through aliases array, insert into aliases -> item_id, title
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    for v in aliases:
+      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
+      query = cursor.execute(sqli_query, (items_id, v))      
+      if not query:
+        abort(409, "Could not create item")
+
+  # 3. loop through attributes object, insert items_attr. -> item_id, attr_title, attr_value
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    for k in attributes:
+      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
+      query = cursor.execute(sqli_query, (items_id, k, attributes[k]))      
+      if not query:
+        abort(409, "Could not create item")
+
+  return_json = {"title":title, "id":items_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes}
+  return jsonify(return_json), 201
+
+
 
 #this method executes after every API request
 @app.after_request
