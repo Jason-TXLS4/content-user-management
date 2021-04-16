@@ -167,7 +167,6 @@ def get_item(game_id,item_id):
       attributes[row[0]] = row[1]
 
 
-
   return_json = {"title":title, "id":item_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes} 
   return jsonify(return_json), 200
 
