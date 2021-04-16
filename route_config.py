@@ -115,7 +115,7 @@ def createNewItem(game_id):
     sqli_query = "INSERT INTO items (game_id, title, description) VALUES (?,?,?)"
     query = cursor.execute(sqli_query,(int(game_id), title, description))
     if query != False: 
-      items_id = cursor.lastrowid
+      item_id = cursor.lastrowid
   #if the query failed
   if not query:
     abort(409, "Could not create item")
@@ -125,7 +125,7 @@ def createNewItem(game_id):
     cursor = conn.cursor()
     for v in aliases:
       sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
-      query = cursor.execute(sqli_query, (items_id, v))      
+      query = cursor.execute(sqli_query, (item_id, v))      
       if not query:
         abort(409, "Could not create item")
 
@@ -134,12 +134,14 @@ def createNewItem(game_id):
     cursor = conn.cursor()
     for k in attributes:
       sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
-      query = cursor.execute(sqli_query, (items_id, k, attributes[k]))      
+      query = cursor.execute(sqli_query, (item_id, k, attributes[k]))      
       if not query:
         abort(409, "Could not create item")
 
-  return_json = {"title":title, "id":items_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes}
-  return jsonify(return_json), 201
+  #return_json = {"title":title, "id":items_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes}
+  #return jsonify(return_json), 201
+  return get_item(game_id, item_id)
+
 
 # 4.3 - retrieve all item details
 @app.route('/game/<game_id>/item/<item_id>',methods=['GET'])
@@ -164,6 +166,8 @@ def get_item(game_id,item_id):
     for row in result:      
       attributes[row[0]] = row[1]
 
+
+
   return_json = {"title":title, "id":item_id, "game_id":game_id, "description":description, "aliases":aliases, "attributes":attributes} 
   return jsonify(return_json), 200
 
@@ -171,21 +175,44 @@ def get_item(game_id,item_id):
 @app.route('/game/<game_id>/item/<item_id>', methods=['PUT'])
 def updateItemDetails(game_id,item_id):
 
-  # content = request.get_json()
-  # title = content['title']
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  aliases = content['aliases']#array
+  attributes = content['attributes']#object
 
-  # with sqlite3.connect(players_db) as conn:
-  #   cursor = conn.cursor()
-  #   sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
-  #   query = cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
-  #   if query != False:#not sure if this if is needed, but i figured if the insert didn't work, I shouldn't get the lastrowid
-  #     characters_id = cursor.lastrowid #this gets the characters_id
-  # #if the query failed
-  # if not query:
-  #   abort(409, "Could not create character")
+  with sqlite3.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "UPDATE items SET title=?, description=? WHERE items_id=?"
+    query = cursor.execute(sqli_query,(title, description,item_id))
+    if not query:
+      abort(409, "Could not update")
+      #delete aliases and reinsert 
+    sqli_query = "DELETE FROM items_aliases WHERE item_id=?"
+    query = cursor.execute(sqli_query,(item_id,))
+    if not query:
+      abort(409, "Could not update")
+    for k in aliases:
+      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
+      query = cursor.execute(sqli_query, (item_id, k,))      
+      if not query:
+        abort(409, "Could not create item")
+    #delete old attribtues and insert new ones
+    sqli_query = "DELETE FROM items_attributes WHERE item_id=?"
+    query = cursor.execute(sqli_query,(item_id,))
+    if not query:
+      abort(409, "Could not update")
+     # 3. loop through attributes object, insert items_attr. -> item_id, attr_title, attr_value
+    for k in attributes:
+      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
+      query = cursor.execute(sqli_query, (item_id, k, attributes[k]))      
+      if not query:
+        abort(409, "Could not create item")
 
-  # return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":"null", "attributes":"null"}
-  # return jsonify(return_json), 200
+  if not query:
+    abort(409, "Could not update")
+
+  return get_item(game_id,item_id)
 
 #this method executes after every API request
 @app.after_request
