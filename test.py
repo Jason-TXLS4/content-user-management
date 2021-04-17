@@ -1,18 +1,23 @@
-import sqlite3
+import psycopg2
 
-#con = sqlite3.connect('player_services.db')
-con = sqlite3.connect('content_services.db')
+
+players_db = ""
+content_db = ""
+con = psycopg2.connect(content_db, sslmode='require')
 c = con.cursor() 
+
+
+
 # c.execute('''
-# INSERT INTO players (title) values ("Clark");
+# INSERT INTO players (title) values ('Clark');
 # ''')
 
 # c.execute('''
-# INSERT INTO players (title) values ("Bruce");
+# INSERT INTO players (title) values ('Bruce');
 # ''')
 
 # c.execute('''
-# INSERT INTO players (title) values ("Hal");
+# INSERT INTO players (title) values ('Hal');
 # ''')
 
 
@@ -25,7 +30,7 @@ INSERT INTO items (game_id, title, description) values (123,'Laser Blaster','Pew
 ''')
 
 c.execute('''
-INSERT INTO items (game_id, title, description) values (456,'Sais',"Raph's weapons of choice.");
+INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
 ''')
 
 

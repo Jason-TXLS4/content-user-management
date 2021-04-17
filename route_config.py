@@ -3,14 +3,14 @@ from flask import request
 from flask import Response
 from flask import jsonify
 import requests
-import sqlite3
 import os
 import json
-
+import psycopg2
 
 app = Flask(__name__)
-players_db = "player_services.db"
-content_db = "content_services.db"
+
+players_db = os.environ['DATABASE_URL']
+content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
 @app.route('/')
 def sayHello():
@@ -24,7 +24,7 @@ def createNewPlayerCharacter(game_id,player_id):
   content = request.get_json()
   title = content['title']
 
-  with sqlite3.connect(players_db) as conn:
+  with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
     query = cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
@@ -42,7 +42,7 @@ def createNewPlayerCharacter(game_id,player_id):
 #retrieve a list of player characters
 @app.route('/player/<player_id>/character',methods=['GET'])
 def get_player_characters(player_id):  
-  with sqlite3.connect(players_db) as conn:
+  with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
     cursor.execute(sqli_query, (test,))
@@ -58,7 +58,7 @@ def get_player_characters(player_id):
 #retrieve player character details
 @app.route('/player/<player_id>/character/<characters_id>',methods=['GET'])
 def get_player_characters_details(player_id, characters_id):   
-  with sqlite3.connect(players_db) as conn:
+  with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT * FROM characters WHERE characters_id=?" 
     cursor.execute(sqli_query, (characters_id,))
@@ -68,7 +68,7 @@ def get_player_characters_details(player_id, characters_id):
   result_player_id = result[2]
   result_title = result[3]
 
-  with sqlite3.connect(players_db) as conn:
+  with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT * FROM characters_attributes WHERE character_id=?" 
     cursor.execute(sqli_query, (characters_id,))  
@@ -84,7 +84,7 @@ def get_player_characters_details(player_id, characters_id):
 # GET  /game/<game>/item   
 @app.route('/game/<game_id>/item',methods=['GET'])
 def get_all_items(game_id):   
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT items_id, title FROM items WHERE game_id=?" 
     cursor.execute(sqli_query, (game_id,))
@@ -110,7 +110,7 @@ def createNewItem(game_id):
   #3 inserts
   # 1. insert items -> title, desc, game_id
   # !!get the lastrowid
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     sqli_query = "INSERT INTO items (game_id, title, description) VALUES (?,?,?)"
     query = cursor.execute(sqli_query,(int(game_id), title, description))
@@ -121,7 +121,7 @@ def createNewItem(game_id):
     abort(409, "Could not create item")
 
   # 2. loop through aliases array, insert into aliases -> item_id, title
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     for v in aliases:
       sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
@@ -130,7 +130,7 @@ def createNewItem(game_id):
         abort(409, "Could not create item")
 
   # 3. loop through attributes object, insert items_attr. -> item_id, attr_title, attr_value
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     for k in attributes:
       sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
@@ -146,7 +146,7 @@ def createNewItem(game_id):
 # 4.3 - retrieve all item details
 @app.route('/game/<game_id>/item/<item_id>',methods=['GET'])
 def get_item(game_id,item_id):   
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT title, description FROM items WHERE game_id=? AND items_id=?" 
     cursor.execute(sqli_query, (game_id, item_id))
@@ -180,7 +180,7 @@ def updateItemDetails(game_id,item_id):
   aliases = content['aliases']#array
   attributes = content['attributes']#object
 
-  with sqlite3.connect(content_db) as conn:
+  with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     sqli_query = "UPDATE items SET title=?, description=? WHERE items_id=?"
     query = cursor.execute(sqli_query,(title, description,item_id))
