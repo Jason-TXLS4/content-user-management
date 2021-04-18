@@ -14,7 +14,7 @@ content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
 @app.route('/')
 def sayHello():
-  return "hello there"
+  return <h1>hello there</h1>
 
 #API 1.1
 @app.route('/game/<game_id>/player/<player_id>/character', methods=['POST'])
