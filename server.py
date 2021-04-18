@@ -12,7 +12,7 @@ app = Flask(__name__)
 players_db = os.environ['DATABASE_URL']
 content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def sayHello():
   return "Hello there"
 
