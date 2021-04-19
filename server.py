@@ -2,6 +2,7 @@ from flask import Flask
 from flask import request
 from flask import Response
 from flask import jsonify
+import flask
 import requests
 import os
 import json
@@ -12,10 +13,10 @@ app = Flask(__name__)
 players_db = os.environ['DATABASE_URL']
 content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
+
 @app.route('/')
 def sayHello():
   return "Hello there"
-
 
 #API 1.1
 @app.route('/game/<game_id>/player/<player_id>/character', methods=['POST'])
@@ -27,7 +28,7 @@ def createNewPlayerCharacter(game_id,player_id):
 
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (?,?,?)"
+    sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (%s,%s,%s)"
     query = cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
     if query != False:#not sure if this if is needed, but i figured if the insert didn't work, I shouldn't get the lastrowid
       characters_id = cursor.lastrowid #this gets the characters_id
@@ -45,7 +46,7 @@ def createNewPlayerCharacter(game_id,player_id):
 def get_player_characters(player_id):  
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=%s"
     cursor.execute(sqli_query, (test,))
   result = cursor.fetchall()
   final = []
@@ -61,7 +62,7 @@ def get_player_characters(player_id):
 def get_player_characters_details(player_id, characters_id):   
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT * FROM characters WHERE characters_id=?" 
+    sqli_query = "SELECT * FROM characters WHERE characters_id=%s" 
     cursor.execute(sqli_query, (characters_id,))
   result = cursor.fetchone()
   result_characters_id = result[0]
@@ -71,7 +72,7 @@ def get_player_characters_details(player_id, characters_id):
 
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT * FROM characters_attributes WHERE character_id=?" 
+    sqli_query = "SELECT * FROM characters_attributes WHERE character_id=%s" 
     cursor.execute(sqli_query, (characters_id,))  
   result = cursor.fetchone()
   result_attributes = {"players_attributes_id":result[0],"player_id":result[1],"attr_title":result[2],"attr_value":result[3]}
@@ -87,7 +88,7 @@ def get_player_characters_details(player_id, characters_id):
 def get_all_items(game_id):   
   with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT items_id, title FROM items WHERE game_id=?" 
+    sqli_query = "SELECT items_id, title FROM items WHERE game_id=%s" 
     cursor.execute(sqli_query, (game_id,))
   result = cursor.fetchall()
   return_json = []
@@ -113,7 +114,7 @@ def createNewItem(game_id):
   # !!get the lastrowid
   with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "INSERT INTO items (game_id, title, description) VALUES (?,?,?)"
+    sqli_query = "INSERT INTO items (game_id, title, description) VALUES (%s,%s,%s)"
     query = cursor.execute(sqli_query,(int(game_id), title, description))
     if query != False: 
       item_id = cursor.lastrowid
@@ -125,7 +126,7 @@ def createNewItem(game_id):
   with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     for v in aliases:
-      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
+      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (%s,%s)"
       query = cursor.execute(sqli_query, (item_id, v))      
       if not query:
         abort(409, "Could not create item")
@@ -134,7 +135,7 @@ def createNewItem(game_id):
   with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
     for k in attributes:
-      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
+      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (%s,%s,%s)"
       query = cursor.execute(sqli_query, (item_id, k, attributes[k]))      
       if not query:
         abort(409, "Could not create item")
@@ -149,18 +150,18 @@ def createNewItem(game_id):
 def get_item(game_id,item_id):   
   with psycopg2.connect(content_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT title, description FROM items WHERE game_id=? AND items_id=?" 
+    sqli_query = "SELECT title, description FROM items WHERE game_id=%s AND items_id=%s" 
     cursor.execute(sqli_query, (game_id, item_id))
     result = cursor.fetchone()
     title = result[0]
     description = result[1]
-    sqli_query = "SELECT title FROM items_aliases WHERE item_id=?" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
+    sqli_query = "SELECT title FROM items_aliases WHERE item_id=%s" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
     cursor.execute(sqli_query, (item_id,))
     result = cursor.fetchall()
     aliases = []
     for r in result: 
       aliases.append(r[0])
-    sqli_query = "SELECT attr_title, attr_value FROM items_attributes WHERE item_id=?" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
+    sqli_query = "SELECT attr_title, attr_value FROM items_attributes WHERE item_id=%s" #notice here it's item_id and above it's items_id... I was erroneously inconsistent while creating the db
     cursor.execute(sqli_query, (item_id,))
     result = cursor.fetchall()
     attributes = {}
@@ -183,28 +184,28 @@ def updateItemDetails(game_id,item_id):
 
   with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "UPDATE items SET title=?, description=? WHERE items_id=?"
+    sqli_query = "UPDATE items SET title=%s, description=%s WHERE items_id=%s"
     query = cursor.execute(sqli_query,(title, description,item_id))
     if not query:
       abort(409, "Could not update")
       #delete aliases and reinsert 
-    sqli_query = "DELETE FROM items_aliases WHERE item_id=?"
+    sqli_query = "DELETE FROM items_aliases WHERE item_id=%s"
     query = cursor.execute(sqli_query,(item_id,))
     if not query:
       abort(409, "Could not update")
     for k in aliases:
-      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (?,?)"
+      sqli_query = "INSERT INTO items_aliases (item_id, title) VALUES (%s,%s)"
       query = cursor.execute(sqli_query, (item_id, k,))      
       if not query:
         abort(409, "Could not create item")
     #delete old attribtues and insert new ones
-    sqli_query = "DELETE FROM items_attributes WHERE item_id=?"
+    sqli_query = "DELETE FROM items_attributes WHERE item_id=%s"
     query = cursor.execute(sqli_query,(item_id,))
     if not query:
       abort(409, "Could not update")
      # 3. loop through attributes object, insert items_attr. -> item_id, attr_title, attr_value
     for k in attributes:
-      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (?,?,?)"
+      sqli_query = "INSERT INTO items_attributes (item_id, attr_title, attr_value) VALUES (%s,%s,%s)"
       query = cursor.execute(sqli_query, (item_id, k, attributes[k]))      
       if not query:
         abort(409, "Could not create item")
@@ -233,40 +234,40 @@ def create_player():
   title = content['title']
   attributes = content['attributes']
   #2 inserts -> one to player, the other to attributes
-  with psycopg2.connect(player_db, sslmode='require') as conn:
+  with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = "INSERT INTO players (title) VALUES (?)"
-    query = cursor.execute(sqli_query,(title,))
+    db_query = "INSERT INTO players (title) VALUES(%s)"
+    query = cursor.execute(db_query, (title,))
     if query != False:
       players_id = cursor.lastrowid
     if not query:
-      abort(409, "Could not create character")
+      return title
     #loop through attributes
-    for a in attributes:  
-      sqli_query = "INSERT INTO attributes (title, value) VALUES (?, ?)"
-      query = cursor.execute(sqli_query,(a[0],a[1]))
-      if not query:
-        abort(409, "Could not create character")
+    # for a in attributes:  
+    #   sqli_query = "INSERT INTO attributes (title, value) VALUES (%s, %s)"
+    #   query = cursor.execute(sqli_query,(a[0],a[1]))
+    #   if not query:
+    #     return flask.abort(409, "Could not create character")
   
-  return get_player_details(players_id)
+  return "ok"
 
   #6.3 Retrieve Player details
 @app.route('/player/<player_id>',methods=['GET'])
 def get_player_details(player_id):
   with psycopg2.connect(player_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT title FROM players WHERE player_id=?"
+    sqli_query = "SELECT title FROM players WHERE player_id=%s"
     cursor.execute(sqli_query, (player_id,))
     result = cursor.fetchone()
     title = result[0]
-    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=%s"
     cursor.execute(sqli_query, (player_id,))
     result = cursor.fetchall()
     characters = []
     for row in result:
       items = {'id': row[0], 'title': row[1]}
       characters.append(items)
-    sqli_query = "SELECT attr_title, attr_value FROM players_attributes WHERE player_id=?" 
+    sqli_query = "SELECT attr_title, attr_value FROM players_attributes WHERE player_id=%s" 
     cursor.execute(sqli_query, (player_id,))
     result = cursor.fetchall()
     attributes = {}
@@ -284,19 +285,19 @@ def update_players(player_id):
   attributes = content['attributes']#This is the object
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    sqli_query = " UPDATE players SET title=? WHERE players_id=?"
+    sqli_query = " UPDATE players SET title=%s WHERE players_id=%s"
     query = cursor.execute(sqli_query,(title, players_id))
     if not query:
       abort(409, "Sorry did not update players")
     #This is just deleting the updated id and replacing it with the new
     #one
-    sqli_query = "DELETE FROM players WHERE players_id=?"
+    sqli_query = "DELETE FROM players WHERE players_id=%s"
     query = cursor.execute(sqli_query, (players_id,))
     if not query:
       abort(409, "Sorry did not update players")
     #This will loop through characters and update the player id and title
     for i in characters:
-      sqli_query = "INSERT INTO characters (player_id, title) VALUES (?,?)"
+      sqli_query = "INSERT INTO characters (player_id, title) VALUES (%s,%s)"
       query = cursor.execute(sqli_query, (player_id,i,characters[i]))
       #Just an error message
       if not query:
