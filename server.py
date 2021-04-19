@@ -241,7 +241,7 @@ def create_player():
     if query != False:
       players_id = cursor.lastrowid
     if not query:
-      return title
+      return attributes
     #loop through attributes
     # for a in attributes:  
     #   sqli_query = "INSERT INTO attributes (title, value) VALUES (%s, %s)"
