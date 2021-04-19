@@ -354,7 +354,7 @@ def update_room_details(game_id, room_id):
 @app.route('/game/<game_id>/room/<room_id>', methods=['DELETE'])
 def delete_room(game_id, room_id):
     data = request.get_json()
-    with sqlite3.connect(content_db) as conn:
+    with psycopg2.connect(content_db) as conn:
       cursor = conn.cursor()
       cursor.execute("SELECT rooms_id FROM rooms WHERE game_id=? AND rooms_id=?", (game_id, room_id,))
       if cursor.fetchone():
