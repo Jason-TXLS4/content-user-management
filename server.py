@@ -236,7 +236,7 @@ def create_player():
   #2 inserts -> one to player, the other to attributes
   with psycopg2.connect(players_db) as conn:
     cursor = conn.cursor()
-    db_query = "INSERT INTO players (title) VALUES(%s)"
+    db_query = "INSERT INTO players (title) VALUES(%s);"
     query = cursor.execute(db_query, (title,))
     if query != False:
       players_id = cursor.lastrowid
