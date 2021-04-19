@@ -301,7 +301,7 @@ def update_players(player_id):
       #Just an error message
       if not query:
         abort(409, "Could not create character")
-   if not query:
+  if not query:
     abort(409, "Could not update")
   return  get_player_characters(player_id)
 
