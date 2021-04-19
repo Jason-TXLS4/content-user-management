@@ -266,6 +266,45 @@ def get_player_details(player_id):
   return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
   return jsonify(return_json), 200
 
+#7.1 
+# Retrieve rooms
+@app.route('/game/<game_id>/room', methods=['GET'])
+def get_rooms(game_id):  
+  with psycopg2.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT rooms_id, title FROM rooms WHERE game_id=?"
+    cursor.execute(sqli_query, (game_id,))
+  result = cursor.fetchall()
+  final = []
+  for row in result:
+    item = {'id': row[0], 'title': row[1]}
+    final.append(item)
+  return jsonify(final), 200
+
+#7.2
+
+
+#7.3
+@app.route('/game/<game_id>/room/<room_id>', methods=['GET'])
+def get_room_details(game_id, room_id):
+  with psycopg2.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT title, description FROM rooms WHERE game_id=? AND rooms_id=?" 
+    cursor.execute(sqli_query, (game_id, room_id))
+    result = cursor.fetchone()
+    title = result[0]
+    description = result[1]
+      
+    sqli_query = "SELECT attr_title, attr_value FROM rooms_attributes WHERE room_id=?" 
+    cursor.execute(sqli_query, (room_id,))
+    result = cursor.fetchall()
+    attributes = {}
+    for row in result:      
+      attributes[row[0]] = row[1] 
+
+  return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
+  return jsonify(return_json), 200
+
 #this method executes after every API request
 @app.after_request
 def after_requestuest(response):
