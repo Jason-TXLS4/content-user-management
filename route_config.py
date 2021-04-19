@@ -224,6 +224,20 @@ def updateItemDetails(game_id,item_id):
 
   return get_item(game_id,item_id)
 
+# API 4.5
+# Delete item
+@app.route('/game/<game_id>/item/<item_id>', methods=['DELETE'])
+def delete_item(game_id, item_id):
+    data = request.get_json()
+    with psycopg2.connect(content_db) as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT items_id FROM items WHERE game_id=? AND items_id=?", (game_id, item_id,))
+      if cursor.fetchone():
+        cursor.execute("DELETE FROM items WHERE game_id=? AND items_id=?", (game_id, item_id,))
+      else:
+        abort(409, "Item does not exist")
+    return jsonify(data), 204
+
 #6.1 Retrieve a list of players
 @app.route('/player', methods=['GET'])
 def get_players():    
