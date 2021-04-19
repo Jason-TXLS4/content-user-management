@@ -85,7 +85,7 @@ def get_player_characters_details(player_id, characters_id):
 # GET  /game/<game>/item   
 @app.route('/game/<game_id>/item',methods=['GET'])
 def get_all_items(game_id):   
-  with psycopg2.connect(content_db) as conn:
+  with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
     sqli_query = "SELECT items_id, title FROM items WHERE game_id=?" 
     cursor.execute(sqli_query, (game_id,))
@@ -111,7 +111,7 @@ def createNewItem(game_id):
   #3 inserts
   # 1. insert items -> title, desc, game_id
   # !!get the lastrowid
-  with psycopg2.connect(content_db) as conn:
+  with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
     sqli_query = "INSERT INTO items (game_id, title, description) VALUES (?,?,?)"
     query = cursor.execute(sqli_query,(int(game_id), title, description))
@@ -181,7 +181,7 @@ def updateItemDetails(game_id,item_id):
   aliases = content['aliases']#array
   attributes = content['attributes']#object
 
-  with psycopg2.connect(content_db) as conn:
+  with psycopg2.connect(content_db, sslmode='require') as conn:
     cursor = conn.cursor()
     sqli_query = "UPDATE items SET title=?, description=? WHERE items_id=?"
     query = cursor.execute(sqli_query,(title, description,item_id))
@@ -213,6 +213,98 @@ def updateItemDetails(game_id,item_id):
     abort(409, "Could not update")
 
   return get_item(game_id,item_id)
+
+#6.1 Retrieve a list of players
+@app.route('/player', methods=['GET'])
+def get_players():    
+  with psycopg2.connect(player_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    result = cursor.execute("SELECT * FROM players")
+  final = []
+  for row in result:
+        item = {'id': row[0], 'title': row[1]}
+        final.append(item) 
+  return jsonify(final), 201
+
+#6.2
+@app.route('/player', methods=['POST'])
+def create_player():
+  content = request.get_json()
+  title = content['title']
+  attributes = content['attributes']
+  #2 inserts -> one to player, the other to attributes
+  with psycopg2.connect(player_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    sqli_query = "INSERT INTO players (title) VALUES (?)"
+    query = cursor.execute(sqli_query,(title,))
+    if query != False:
+      players_id = cursor.lastrowid
+    if not query:
+      abort(409, "Could not create character")
+    #loop through attributes
+    for a in attributes:  
+      sqli_query = "INSERT INTO attributes (title, value) VALUES (?, ?)"
+      query = cursor.execute(sqli_query,(a[0],a[1]))
+      if not query:
+        abort(409, "Could not create character")
+  
+  return get_player_details(players_id)
+
+  #6.3 Retrieve Player details
+@app.route('/player/<player_id>',methods=['GET'])
+def get_player_details(player_id):
+  with psycopg2.connect(player_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    sqli_query = "SELECT title FROM players WHERE player_id=?"
+    cursor.execute(sqli_query, (player_id,))
+    result = cursor.fetchone()
+    title = result[0]
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
+    cursor.execute(sqli_query, (player_id,))
+    result = cursor.fetchall()
+    characters = []
+    for row in result:
+      items = {'id': row[0], 'title': row[1]}
+      characters.append(items)
+    sqli_query = "SELECT attr_title, attr_value FROM players_attributes WHERE player_id=?" 
+    cursor.execute(sqli_query, (player_id,))
+    result = cursor.fetchall()
+    attributes = {}
+    for row in result:      
+      attributes[row[0]] = row[1] 
+  return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
+  return jsonify(return_json), 200
+
+# 6.4 from Sarthak -- TEST THIS
+@app.route('/player/<player_id>',methods=['PUT'])
+def update_players(player_id):
+  content = request.get_json()
+  title = content['title']
+  characters=content['characters']#this is the array
+  attributes = content['attributes']#This is the object
+  with psycopg2.connect(players_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = " UPDATE players SET title=? WHERE players_id=?"
+    query = cursor.execute(sqli_query,(title, players_id))
+    if not query:
+      abort(409, "Sorry did not update players")
+    #This is just deleting the updated id and replacing it with the new
+    #one
+    sqli_query = "DELETE FROM players WHERE players_id=?"
+    query = cursor.execute(sqli_query, (players_id,))
+    if not query:
+      abort(409, "Sorry did not update players")
+    #This will loop through characters and update the player id and title
+    for i in characters:
+      sqli_query = "INSERT INTO characters (player_id, title) VALUES (?,?)"
+      query = cursor.execute(sqli_query, (player_id,i,characters[i]))
+      #Just an error message
+      if not query:
+        abort(409, "Could not create character")
+   if not query:
+    abort(409, "Could not update")
+  return  get_player_characters(player_id)
+
 
 #this method executes after every API request
 @app.after_request
