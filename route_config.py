@@ -319,6 +319,37 @@ def get_room_details(game_id, room_id):
   return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
   return jsonify(return_json), 200
 
+#7.4 Update room details 
+@app.route('/game/<game_id>/room/<room_id>', methods=['PUT'])
+def update_room_details(game_id, room_id):
+
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  attributes = content['attributes']
+
+  with psycopg2.connect(content_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "UPDATE rooms SET title=?, description=? WHERE rooms_id=?"
+    query = cursor.execute(sqli_query,(title, description, room_id))      
+    if not query:
+      abort(409, "Error")
+    
+    sqli_query = "DELETE FROM rooms_attributes WHERE room_id=?"
+    query = cursor.execute(sqli_query, (room_id,))
+    if not query:
+      abort(409, "Could not update")
+    
+    for k in attributes:
+      sqli_query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (?,?,?)"
+      query = cursor.execute(sqli_query, (room_id, k, attributes[k]))      
+      if not query:
+        abort(409, "Error")
+  if not query:
+    abort(409, "Could not update")
+
+  return get_room_details(game_id, room_id)
+
 #this method executes after every API request
 @app.after_request
 def after_requestuest(response):
