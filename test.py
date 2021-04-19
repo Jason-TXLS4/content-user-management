@@ -1,8 +1,8 @@
 import psycopg2
 
 
-players_db = ""
-content_db = ""
+players_db = "postgres://ccybprhsnhfxgx:b2ce8114ee71abcadd147b42a47b1caa4ae540ac946317a821d04098d40d4acf@ec2-107-20-153-39.compute-1.amazonaws.com:5432/d4b7p3avace43e"
+content_db = "postgres://hbwubwppwmylry:07310537702b404ca848a5c28e8f791fa4bb8abd942f81b8166ea505bf811620@ec2-34-225-103-117.compute-1.amazonaws.com:5432/deml8rlqer0tim"
 con = psycopg2.connect(content_db, sslmode='require')
 c = con.cursor() 
 
@@ -33,6 +33,9 @@ c.execute('''
 INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
 ''')
 
+c.execute('''
+INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
+''')
 
 
 con.commit()

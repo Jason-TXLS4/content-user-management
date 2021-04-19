@@ -13,7 +13,6 @@ app = Flask(__name__)
 players_db = os.environ['DATABASE_URL']
 content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
-
 @app.route('/')
 def sayHello():
   return "Hello there"
@@ -234,29 +233,28 @@ def create_player():
   title = content['title']
   attributes = content['attributes']
   #2 inserts -> one to player, the other to attributes
-  with psycopg2.connect(players_db) as conn:
+  with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    db_query = "INSERT INTO players (title) VALUES(%s);"
-    query = cursor.execute(db_query, (title,))
-    if query != False:
-      players_id = cursor.lastrowid
-    if not query:
-      return attributes
-    #loop through attributes
-    # for a in attributes:  
-    #   sqli_query = "INSERT INTO attributes (title, value) VALUES (%s, %s)"
-    #   query = cursor.execute(sqli_query,(a[0],a[1]))
-    #   if not query:
-    #     return flask.abort(409, "Could not create character")
-  
-  return "ok"
+    query = "INSERT INTO players (players_id, title) VALUES(DEFAULT, %s) RETURNING players_id;"
+    cursor.execute(query, (title,))
+    player_id = cursor.fetchone()[0]
+    if cursor.rowcount == 0:
+      return flask.abort(409, "Could not create character")
+    
+    # #loop through attributes
+    for k in attributes:
+      query = "INSERT INTO players_attributes (attr_title, attr_value, player_id) VALUES (%s, %s, %s);"
+      cursor.execute(query,(k,str(attributes[k]), player_id))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not create character")
+  return get_player_details(player_id)
 
   #6.3 Retrieve Player details
 @app.route('/player/<player_id>',methods=['GET'])
 def get_player_details(player_id):
-  with psycopg2.connect(player_db, sslmode='require') as conn:
+  with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT title FROM players WHERE player_id=%s"
+    sqli_query = "SELECT title FROM players WHERE players_id=%s"
     cursor.execute(sqli_query, (player_id,))
     result = cursor.fetchone()
     title = result[0]
