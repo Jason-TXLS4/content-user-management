@@ -350,6 +350,19 @@ def update_room_details(game_id, room_id):
 
   return get_room_details(game_id, room_id)
 
+# 7.5 Delete room
+@app.route('/game/<game_id>/room/<room_id>', methods=['DELETE'])
+def delete_room(game_id, room_id):
+    data = request.get_json()
+    with sqlite3.connect(content_db) as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT rooms_id FROM rooms WHERE game_id=? AND rooms_id=?", (game_id, room_id,))
+      if cursor.fetchone():
+        cursor.execute("DELETE FROM rooms WHERE game_id=? AND rooms_id=?", (game_id, room_id,))
+      else:
+        abort(409, "Room does not exist")
+    return jsonify(data), 204
+
 #this method executes after every API request
 @app.after_request
 def after_requestuest(response):
