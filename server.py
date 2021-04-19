@@ -322,10 +322,10 @@ def update_players(player_id):
 def after_requestuest(response):
   return response
 
-app.debug = True
-host = os.environ.get('OP', '0.0.0.0')
-port = int(os.environ.get('PORT', 8080))
-app.run(host=host, port=port)
+#app.debug = True
+#host = os.environ.get('OP', '0.0.0.0')
+#port = int(os.environ.get('PORT', 8080))
+#app.run(host=host, port=port)
 
-# if __name__ == '__main__':
-#     app.run(threaded=True, port=5000)
+if __name__ == '__main__':
+  app.run(threaded=True, port=5000)
