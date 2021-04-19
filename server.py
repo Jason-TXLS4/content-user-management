@@ -48,13 +48,13 @@ players_db = os.environ['@app.route('/player/<player_id > ',methods=['PUT'])
     content_db=os.environ['HEROKU_POSTGRESQL_JADE_URL']
 
 
-@ app.route('/', methods= ['GET'])
+@ app.route('/', methods = ['GET'])
 def sayHello():
   return "What's UP"
 
 
 # API 1.1
-@ app.route('/game/<game_id>/player/<player_id>/character', methods= ['POST'])
+@ app.route('/game/<game_id>/player/<player_id>/character', methods = ['POST'])
 def createNewPlayerCharacter(game_id, player_id):
   # insert character into db
 
@@ -294,9 +294,19 @@ def update_players(player_id):
    if not query:
     abort(409, "Could not update")
 
-  return get_player_characters(player_id)
+  return get_player_characters(player_id), 200
+# Just in case u want to delete the player seperately
+@ app.route('/player/<player_id>', methods = ['PUT'])
+def delete_players(player_id):
+  content=request.get_json()
+  title=content['title']
 
-
+  with psycopg2.connect(players_db) as conn:
+    cursor=conn.cursor()
+    sqli_query="DELETE FROM players WHERE players_id=?"
+    query=cursor.execute(sqli_query, (players_id,))
+  # return jsonify(return_json), 200
+  return "Player deleted" 204
 
 # this method executes after every API request
 @ app.after_request
