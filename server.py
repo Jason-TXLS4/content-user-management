@@ -265,7 +265,6 @@ def create_player():
             if cursor.rowcount == 0:
                 # Just an error message
                 return flask.abort(409, "Could not create character")
-    # adds a new player with the attributes to the db
     return get_player_details(player_id)
 
     # 6.3 Retrieve Player details
