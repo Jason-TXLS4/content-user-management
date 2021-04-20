@@ -289,35 +289,32 @@ def get_player_details(player_id):
   return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
   return jsonify(return_json), 200
 
-# 6.4 from Sarthak -- TEST THIS
-@app.route('/player/<player_id>',methods=['PUT'])
-def update_players(player_id):
+#6.4 Update player details 
+@app.route('/player/<player_id>', methods=['PUT'])
+def update_player(player_id):
   content = request.get_json()
   title = content['title']
-  characters=content['characters']#this is the array
-  attributes = content['attributes']#This is the object
-  with psycopg2.connect(players_db) as conn:
+  attributes = content['attributes']
+
+  with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = " UPDATE players SET title=%s WHERE players_id=%s"
-    query = cursor.execute(sqli_query,(title, players_id))
-    if not query:
-      abort(409, "Sorry did not update players")
-    #This is just deleting the updated id and replacing it with the new
-    #one
-    sqli_query = "DELETE FROM players WHERE players_id=%s"
-    query = cursor.execute(sqli_query, (players_id,))
-    if not query:
-      abort(409, "Sorry did not update players")
-    #This will loop through characters and update the player id and title
-    for i in characters:
-      sqli_query = "INSERT INTO characters (player_id, title) VALUES (%s,%s)"
-      query = cursor.execute(sqli_query, (player_id,i,characters[i]))
-      #Just an error message
-      if not query:
-        abort(409, "Could not create character")
-  if not query:
-    abort(409, "Could not update")
-  return  get_player_characters(player_id)
+    query = "UPDATE players SET title=%s WHERE players_id=%s"
+    cursor.execute(query,(title, player_id,))      
+    if cursor.rowcount == 0:
+      return flask.abort(409, "Could not update") 
+      
+    query = "DELETE FROM players_attributes WHERE player_id=%s"
+    query = cursor.execute(sqli_query, (player_id,))
+    if cursor.rowcount == 0:
+      return flask.abort(409, "Could not update")
+    
+    for y in attributes:
+      query = "INSERT INTO players_attributes (player_id, attr_title, attr_value) VALUES (%s,%s,%s)"
+      cursor.execute(query, (player_id, y, attributes[y]))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update")
+  return get_player_details(player_id)
+
 
 # 6.5 DELETE player
 #remove a player -- return (204, "Player deleted")
