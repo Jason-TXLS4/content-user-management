@@ -302,11 +302,14 @@ def update_player(player_id):
     cursor.execute(query,(title, player_id,))      
     if cursor.rowcount == 0:
       return flask.abort(409, "Could not update") 
-      
-    query = "DELETE FROM players_attributes WHERE player_id=%s"
-    query = cursor.execute(sqli_query, (player_id,))
-    if cursor.rowcount == 0:
-      return flask.abort(409, "Could not update")
+
+    query = "SELECT * FROM players_attributes WHERE player_id=%s;"
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount != 0:
+      query = "DELETE FROM players_attributes WHERE player_id=%s;"
+      cursor.execute(query, (player_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update")
     
     for y in attributes:
       query = "INSERT INTO players_attributes (player_id, attr_title, attr_value) VALUES (%s,%s,%s)"
@@ -398,6 +401,39 @@ def get_room_details(game_id, room_id):
 
   return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
   return jsonify(return_json), 200
+
+#7.4 Update room details 
+@app.route('/game/<game_id>/room/<room_id>', methods=['PUT'])
+def update_room_details(game_id, room_id):
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  attributes = content['attributes']
+
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "SELECT * FROM rooms WHERE rooms_id=%s;"
+    cursor.execute(query, (room_id,))
+    if cursor.rowcount != 0:
+      query = "UPDATE rooms SET title=%s, description=%s WHERE rooms_id=%s;"
+      cursor.execute(query, (title, description, room_id))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+    query = "SELECT * FROM rooms_attributes WHERE rooms_id=%s;"
+    cursor.execute(query, (room_id,))
+    if cursor.rowcount != 0:
+      query = "DELETE FROM rooms_attributes WHERE room_id=%s;"
+      cursor.execute(query, (room_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+    
+    for k in attributes:
+      query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (%s,%s,%s)"
+      cursor.execute(sqli_query, (room_id, k, attributes[k]))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+  
+  return get_room_details(game_id, room_id)
 
 
 #this method executes after every API request
