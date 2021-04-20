@@ -21,22 +21,31 @@ c = con.cursor()
 # ''')
 
 
-c.execute('''
-INSERT INTO items (game_id, title, description) values (123,'shortsword','Short sword. Sharp.');
-''')
+# c.execute('''
+# INSERT INTO items (game_id, title, description) values (123,'shortsword','Short sword. Sharp.');
+# ''')
+
+# c.execute('''
+# INSERT INTO items (game_id, title, description) values (123,'Laser Blaster','Pew Pew');
+# ''')
+
+# c.execute('''
+# INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
+# ''')
+
+# c.execute('''
+# INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
+# ''')
 
 c.execute('''
-INSERT INTO items (game_id, title, description) values (123,'Laser Blaster','Pew Pew');
+INSERT INTO rooms (game_id, title, description) values (123,'kitchen','lots of pots and pans') RETURNING rooms_id;
 ''')
-
 c.execute('''
-INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
+INSERT INTO rooms (game_id, title, description) values (123,'Lounge','Couches galore') RETURNING rooms_id;
 ''')
-
 c.execute('''
-INSERT INTO items (game_id, title, description) values (456,'Sais','weapon of choice for a certain ninja turle');
+INSERT INTO rooms (game_id, title, description) values (123,'BAsement','Man Cave') RETURNING rooms_id;
 ''')
-
 
 con.commit()
 c.close()
