@@ -63,17 +63,20 @@ def get_player_characters_details(player_id, characters_id):
     cursor = conn.cursor()
     query = "SELECT * FROM characters WHERE characters_id=%s" 
     cursor.execute(query, (characters_id,))
+    if cursor.rowcount == 0:
+      return flask.abort(404, "resource not found")
     for record in cursor:
       result_characters_id = record[0]
       result_game_id = record[1]
       result_player_id = record[2]
       result_title = record[3]
-    query = "SELECT * FROM characters_attributes WHERE character_id=%s" 
+    query = "SELECT attr_title, attr_value FROM characters_attributes WHERE character_id=%s" 
     cursor.execute(query, (characters_id,))
     result_attributes = {}
-    for record in cursor:
-      item = {record[0]:record[1]}
-      result_attributes.append(item)
+    if cursor.rowcount > 0:
+      for record in cursor:
+        item = {record[0]:record[1]}
+        result_attributes.update(item)
   character = {"title":result_title, "id":result_characters_id, "game_id":result_game_id, "player_id":result_player_id, "attributes":result_attributes}
   return jsonify(character), 200
 
@@ -88,8 +91,8 @@ def deletePlayerCharacter(player_id, characters_id):
       if cursor.fetchone():
         cursor.execute("DELETE FROM characters WHERE characters_id=%s AND player_id=%s", (characters_id, player_id))
       else:
-        abort(409, "Character does not exist")
-    return jsonify(data), 204
+        return flask.abort(404, "Resource (character) not found")
+    return '', 204
 
 
 # 4.1 - Retrieve all items
@@ -314,6 +317,89 @@ def update_players(player_id):
   if not query:
     abort(409, "Could not update")
   return  get_player_characters(player_id)
+
+# 6.5 DELETE player
+#remove a player -- return (204, "Player deleted")
+@app.route('/player/<player_id>',methods=['DELETE'])
+def remove_player(player_id):
+  with psycopg2.connect(players_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "SELECT * FROM players WHERE players_id=%s;" #see that player exists
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount == 1: #if players exists
+      query = "DELETE FROM players_attributes WHERE player_id=%s;"
+      cursor.execute(query, (player_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Player could not be deleted")
+      query = "DELETE FROM players WHERE players_id=%s;" #delete player
+      cursor.execute(query, (player_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Player could not be deleted")
+    else:
+      return flask.abort(409, "Player does not exist")
+  return '', 204
+
+#7.1 
+# Retrieve rooms
+@app.route('/game/<game_id>/room', methods=['GET'])
+def get_rooms(game_id):  
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "SELECT rooms_id, title FROM rooms WHERE game_id=%s"
+    cursor.execute(query, (game_id,))
+  result = cursor.fetchall()
+  final = []
+  for row in result:
+    item = {'id': row[0], 'title': row[1]}
+    final.append(item)
+  return jsonify(final), 200
+
+#7.2 POST 
+@app.route('/game/<game_id>/room', methods=['POST'])
+def createNewRoom(game_id):
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  attributes = content['attributes']
+
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "INSERT INTO rooms (game_id, title, description) VALUES (%s,%s,%s) RETURNING rooms_id;"
+    cursor.execute(query,(int(game_id), title, description))
+    if cursor.rowcount == 0:
+      return flask.abort(409, "Could not create room")
+    rooms_id = cursor.fetchone()[0]
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    for key in attributes:
+      query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (%s,%s,%s);"
+      cursor.execute(query, (int(rooms_id) ,key, attributes[key]))
+  
+  return get_room_details(game_id, rooms_id)
+  
+#7.3
+@app.route('/game/<game_id>/room/<room_id>', methods=['GET'])
+def get_room_details(game_id, room_id):
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "SELECT title, description FROM rooms WHERE game_id=%s AND rooms_id=%s;" 
+    cursor.execute(query, (game_id, room_id))
+    if cursor.rowcount == 0:
+      return flask.abort(404, "resource(room) not found")
+    for record in cursor:
+      title = record[0]
+      description = record[1]
+      
+    query = "SELECT attr_title, attr_value FROM rooms_attributes WHERE room_id=%s" 
+    cursor.execute(query, (int(room_id),))
+    attributes = {}
+    if cursor.rowcount > 0:
+      for record in cursor:      
+        item = {record[0]:record[1]}
+        attributes.update(item)
+
+  return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
+  return jsonify(return_json), 200
 
 
 #this method executes after every API request

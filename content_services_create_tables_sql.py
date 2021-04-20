@@ -54,7 +54,7 @@ CREATE TABLE rooms_attributes
     room_id INTEGER,
     attr_title varchar,
     attr_value varchar,
-    CONSTRAINT FK FOREIGN KEY(rooms_attributes_id) REFERENCES rooms(rooms_id) 
+    CONSTRAINT FK FOREIGN KEY(room_id) REFERENCES rooms(rooms_id) 
 );
 ''')
 
