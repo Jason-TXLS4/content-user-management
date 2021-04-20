@@ -280,6 +280,47 @@ def get_player_details(player_id):
   return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
   return jsonify(return_json), 200
 
+#6.4 Update player details 
+@app.route('/player/<player_id>', methods=['PUT'])
+def update_player(player_id):
+
+  content = request.get_json()
+  title = content['title']
+  characters = content['characters']
+  attributes = content['attributes']
+
+  with sqlite3.connect(players_db) as conn:
+    cursor = conn.cursor()
+    sqli_query = "UPDATE players SET title=? WHERE players_id=?"
+    query = cursor.execute(sqli_query,(player_id, title,))      
+    if not query:
+      abort(409, "Could not update")
+      
+    sqli_query = "DELETE FROM characters WHERE player_id=?"
+    query = cursor.execute(sqli_query, (player_id,))
+    if not query:
+      abort(409, "Could not delete")   
+        
+    for x in characters:
+      sqli_query = "INSERT INTO characters (title) VALUES (?)"
+      query = cursor.execute(sqli_query, (title,))     
+      if not query:
+        abort(409, "Could not update character")  
+
+    sqli_query = "DELETE FROM players_attributes WHERE player_id=?"
+    query = cursor.execute(sqli_query, (player_id,))
+    if not query:
+      abort(409, "Error")
+    
+    for y in attributes:
+      sqli_query = "INSERT INTO players_attributes (player_id, attr_title, attr_value) VALUES (?,?,?)"
+      query = cursor.execute(sqli_query, (player_id, y, attributes[y]))      
+      if not query:
+        abort(409, "Error")
+  if not query:
+    abort(409, "Could not update")
+  return get_player_details(player_id)
+
 #7.1 
 # Retrieve rooms
 @app.route('/game/<game_id>/room', methods=['GET'])
