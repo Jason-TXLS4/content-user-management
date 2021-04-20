@@ -296,34 +296,32 @@ def get_player_details(player_id):
 # 6.4 from Sarthak -- TEST THIS
 
 @app.route('/player/<player_id>', methods=['PUT'])
-def update_players(player_id):
-    content = request.get_json()  # requesting the lib
-    title = content['title']
-    attributes = content['attributes']  # This is the object
-    with psycopg2.connect(players_db, sslmode='require') as conn:
-        cursor = conn.cursor()
-        # %s needs to be used as psycopg2 does not support ?
-        sqli_query = " UPDATE players SET title=%s WHERE players_id=%s"
-        query = cursor.execute(sqli_query, (title, players_id))
-        if not query:
-            abort(409, "Sorry did not update players")
-        # This is just deleting the updated id and replacing it with the new one
-        sqli_query = "DELETE FROM players WHERE players_id=%s"
-        query = cursor.execute(sqli_query, (players_id,))
-        if not query:
-            # abort is supported with psycopg2
-            abort(409, "Sorry did not update players")
-        # This will loop through characters and update the player id and title
-        for i in attributes:
-            sqli_query = "INSERT INTO players_attributes (attr_title, attr_value, player_id) VALUES (%s, %s, %s);"
-            query = cursor.execute(query, (i, str(attributes[i]), player_id))
-            # Just an error message
-            if not query:
-                abort(409, "Could not create character")
+def update_player(player_id):
+
+  content = request.get_json()#requesting the lib
+  title = content['title']
+  attributes = content['attributes']
+
+  with sqlite3.connect(players_db) as conn:#making the connection with sqlite3
+    cursor = conn.cursor()
+    sqli_query = "UPDATE players SET title=? WHERE players_id=?"#updating the players table
+    query = cursor.execute(sqli_query,(title, player_id,))      
     if not query:
-        abort(409, "Could not update")
-    # adds the updated change to the database
-    return get_players(player_id)
+      abort(409, "Could not update") #just an error message
+      
+    sqli_query = "DELETE FROM players_attributes WHERE player_id=?"#Deleting from players_attributes
+    query = cursor.execute(sqli_query, (player_id,))
+    if not query:
+      abort(409, "Error")
+    
+    for i in attributes:
+      sqli_query = "INSERT INTO players_attributes (player_id, attr_title, attr_value) VALUES (?,?,?)"#inserting into players_attributes
+      query = cursor.execute(sqli_query, (player_id, i, attributes[i]))      
+      if not query:
+        abort(409, "Error")
+  if not query:
+    abort(409, "Could not update")
+  return get_player_details(player_id)#calling 6.3 retreving player details
 
 
 # this method executes after every API request
