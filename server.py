@@ -267,9 +267,7 @@ def create_player():
                 return flask.abort(409, "Could not create character")
     return get_player_details(player_id)
 
-    # 6.3 Retrieve Player details
-
-
+# 6.3 Retrieve Player details
 @app.route('/player/<player_id>', methods=['GET'])
 def get_player_details(player_id):
     with psycopg2.connect(players_db, sslmode='require') as conn:
@@ -297,14 +295,12 @@ def get_player_details(player_id):
 
 # 6.4 from Sarthak -- TEST THIS
 
-
 @app.route('/player/<player_id>', methods=['PUT'])
 def update_players(player_id):
     content = request.get_json()  # requesting the lib
     title = content['title']
-    characters = content['characters']  # this is the array
     attributes = content['attributes']  # This is the object
-    with psycopg2.connect(players_db) as conn:
+    with psycopg2.connect(players_db, sslmode='require') as conn:
         cursor = conn.cursor()
         # %s needs to be used as psycopg2 does not support ?
         sqli_query = " UPDATE players SET title=%s WHERE players_id=%s"
@@ -318,16 +314,16 @@ def update_players(player_id):
             # abort is supported with psycopg2
             abort(409, "Sorry did not update players")
         # This will loop through characters and update the player id and title
-        for i in characters:
-            sqli_query = "INSERT INTO characters (player_id, title) VALUES (%s,%s)"
-            query = cursor.execute(sqli_query, (player_id, i, characters[i]))
+        for i in attributes:
+            sqli_query = "INSERT INTO players_attributes (attr_title, attr_value, player_id) VALUES (%s, %s, %s);"
+            query = cursor.execute(query, (i, str(attributes[i]), player_id))
             # Just an error message
             if not query:
                 abort(409, "Could not create character")
     if not query:
         abort(409, "Could not update")
     # adds the updated change to the database
-    return get_player_characters(player_id)
+    return get_players(player_id)
 
 
 # this method executes after every API request
