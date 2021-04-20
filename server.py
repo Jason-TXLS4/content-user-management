@@ -64,17 +64,20 @@ def get_player_characters_details(player_id, characters_id):
     cursor = conn.cursor()
     query = "SELECT * FROM characters WHERE characters_id=%s" 
     cursor.execute(query, (characters_id,))
+    if cursor.rowcount == 0:
+      return flask.abort(404, "resource not found")
     for record in cursor:
       result_characters_id = record[0]
       result_game_id = record[1]
       result_player_id = record[2]
       result_title = record[3]
-    query = "SELECT * FROM characters_attributes WHERE character_id=%s" 
+    query = "SELECT attr_title, attr_value FROM characters_attributes WHERE character_id=%s" 
     cursor.execute(query, (characters_id,))
     result_attributes = {}
-    for record in cursor:
-      item = {record[0]:record[1]}
-      result_attributes.append(item)
+    if cursor.rowcount > 0:
+      for record in cursor:
+        item = {record[0]:record[1]}
+        result_attributes.update(item)
   character = {"title":result_title, "id":result_characters_id, "game_id":result_game_id, "player_id":result_player_id, "attributes":result_attributes}
   return jsonify(character), 200
 
@@ -89,11 +92,7 @@ def deletePlayerCharacter(player_id, characters_id):
       if cursor.fetchone():
         cursor.execute("DELETE FROM characters WHERE characters_id=%s AND player_id=%s", (characters_id, player_id))
       else:
-        abort(409, "Character does not exist")
-    response = Response()
-    response.code = "expired"
-    response.error_type = "expired"
-    response.status_code = 201    
+        return flask.abort(404, "Resource (character) not found")
     return '', 204
 
 
@@ -368,15 +367,16 @@ def createNewRoom(game_id):
     cursor = conn.cursor()
     query = "INSERT INTO rooms (game_id, title, description) VALUES (%s,%s,%s) RETURNING rooms_id;"
     cursor.execute(query,(int(game_id), title, description))
-    #if the query failed
     if cursor.rowcount == 0:
       return flask.abort(409, "Could not create room")
     rooms_id = cursor.fetchone()[0]
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
     for key in attributes:
       query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (%s,%s,%s);"
       cursor.execute(query, (int(rooms_id) ,key, attributes[key]))
   
-  return "ok" #REPLACE THIS!!! with -->  return get_room_details(game_id, rooms_id)
+  return get_room_details(game_id, rooms_id)
   
 #7.3
 @app.route('/game/<game_id>/room/<room_id>', methods=['GET'])
@@ -392,11 +392,12 @@ def get_room_details(game_id, room_id):
       description = record[1]
       
     query = "SELECT attr_title, attr_value FROM rooms_attributes WHERE room_id=%s" 
-    cursor.execute(sqli_query, (room_id,))
-    result = cursor.fetchall()
+    cursor.execute(query, (int(room_id),))
     attributes = {}
-    for row in result:      
-      attributes[row[0]] = row[1] 
+    if cursor.rowcount > 0:
+      for record in cursor:      
+        item = {record[0]:record[1]}
+        attributes.update(item)
 
   return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
   return jsonify(return_json), 200
