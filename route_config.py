@@ -294,14 +294,6 @@ def update_player(player_id):
     query = cursor.execute(sqli_query,(title, player_id,))      
     if not query:
       abort(409, "Could not update") 
-        
-    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
-    cursor.execute(sqli_query, (player_id,))
-    result = cursor.fetchall()
-    characters = []
-    for row in result:
-      items = {'id': row[0], 'title': row[1]}
-      characters.append(items)
       
     sqli_query = "DELETE FROM players_attributes WHERE player_id=?"
     query = cursor.execute(sqli_query, (player_id,))
