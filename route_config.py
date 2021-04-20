@@ -286,27 +286,23 @@ def update_player(player_id):
 
   content = request.get_json()
   title = content['title']
-  characters = content['characters']
   attributes = content['attributes']
 
   with sqlite3.connect(players_db) as conn:
     cursor = conn.cursor()
     sqli_query = "UPDATE players SET title=? WHERE players_id=?"
-    query = cursor.execute(sqli_query,(player_id, title,))      
+    query = cursor.execute(sqli_query,(title, player_id,))      
     if not query:
-      abort(409, "Could not update")
-      
-    sqli_query = "DELETE FROM characters WHERE player_id=?"
-    query = cursor.execute(sqli_query, (player_id,))
-    if not query:
-      abort(409, "Could not delete")   
+      abort(409, "Could not update") 
         
-    for x in characters:
-      sqli_query = "INSERT INTO characters (title) VALUES (?)"
-      query = cursor.execute(sqli_query, (title,))     
-      if not query:
-        abort(409, "Could not update character")  
-
+    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=?"
+    cursor.execute(sqli_query, (player_id,))
+    result = cursor.fetchall()
+    characters = []
+    for row in result:
+      items = {'id': row[0], 'title': row[1]}
+      characters.append(items)
+      
     sqli_query = "DELETE FROM players_attributes WHERE player_id=?"
     query = cursor.execute(sqli_query, (player_id,))
     if not query:
