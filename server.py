@@ -268,24 +268,32 @@ def create_player():
 def get_player_details(player_id):
   with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = "SELECT title FROM players WHERE players_id=%s"
-    cursor.execute(sqli_query, (player_id,))
-    result = cursor.fetchone()
-    title = result[0]
-    sqli_query = "SELECT characters_id, title FROM characters WHERE player_id=%s"
-    cursor.execute(sqli_query, (player_id,))
-    result = cursor.fetchall()
-    characters = []
-    for row in result:
-      items = {'id': row[0], 'title': row[1]}
-      characters.append(items)
-    sqli_query = "SELECT attr_title, attr_value FROM players_attributes WHERE player_id=%s" 
-    cursor.execute(sqli_query, (player_id,))
-    result = cursor.fetchall()
+    result = []
+    title = "null"
     attributes = {}
-    for row in result:      
-      attributes[row[0]] = row[1] 
-  return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
+    characters = []
+    player_id_return = player_id
+    query = "SELECT title FROM players WHERE players_id=%s"
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount > 0:
+      result = cursor.fetchone()
+      title = result[0]
+    else:
+      player_id_return = "null"
+    query = "SELECT characters_id, title FROM characters WHERE player_id=%s"
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount > 0:
+      result = cursor.fetchall()
+      for row in result:
+        items = {'id': row[0], 'title': row[1]}
+        characters.append(items)
+    query = "SELECT attr_title, attr_value FROM players_attributes WHERE player_id=%s" 
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount > 0:
+      result = cursor.fetchall()
+      for row in result:      
+        attributes[row[0]] = row[1] 
+  return_json = {"title":title, "id":player_id_return, "attributes":attributes, "characters":characters} 
   return jsonify(return_json), 200
 
 #6.4 Update player details 
@@ -324,19 +332,19 @@ def update_player(player_id):
 def remove_player(player_id):
   with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    query = "SELECT * FROM players WHERE players_id=%s;" #see that player exists
+
+    query = "SELECT characters_id FROM characters WHERE player_id=%s"
     cursor.execute(query, (player_id,))
-    if cursor.rowcount == 1: #if players exists
-      query = "DELETE FROM players_attributes WHERE player_id=%s;"
-      cursor.execute(query, (player_id,))
-      if cursor.rowcount == 0:
-        return flask.abort(409, "Player could not be deleted")
+    for key in cursor:
+      deletePlayerCharacter(player_id, key)
+
+    query = "SELECT * FROM players WHERE players_id=%s;"
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount > 0:
       query = "DELETE FROM players WHERE players_id=%s;" #delete player
       cursor.execute(query, (player_id,))
       if cursor.rowcount == 0:
-        return flask.abort(409, "Player could not be deleted")
-    else:
-      return flask.abort(409, "Player does not exist")
+        return flask.abort(410, "Player could not be deleted")
   return '', 204
 
 #7.1 
