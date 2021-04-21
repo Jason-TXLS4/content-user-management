@@ -30,13 +30,12 @@ def createNewPlayerCharacter(game_id,player_id):
     cursor = conn.cursor()
     sqli_query = "INSERT INTO characters (game_id, title, player_id) VALUES (%s,%s,%s) RETURNING characters_id"
     cursor.execute(sqli_query,(int(game_id), title, int(player_id)))
-    #if the query failed
     if cursor.rowcount == 0:
       return flask.abort(409, "Could not create character")
     characters_id = cursor.fetchone()[0]
 
-  return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":"null", "attributes":"null"}
-  return jsonify(return_json), 201
+  #return_json = {"title":title, "id":str(characters_id), "game_id":game_id, "player_id":player_id, "location":"null", "attributes":"null"}
+  return get_player_characters_details(player_id, characters_id)
   
 
 #1.2 GET /player/<player_id>/character

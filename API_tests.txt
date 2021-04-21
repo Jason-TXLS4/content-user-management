@@ -1,0 +1,72 @@
+heroku ps:scale web=1
+
+1.1
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Oscar"}' http://0.0.0.0:8080/game/123/player/46/character 
+
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Oscar"}' https://calm-caverns-53016.herokuapp.com/game/123/player/46/character 
+
+1.2
+curl http://0.0.0.0:8080/player/46/character
+
+1.3
+curl http://0.0.0.0:8080/player/46/character/4
+
+curl https://calm-caverns-53016.herokuapp.com/player/<player_id>/character/<characters_id>
+
+1.4
+curl -X DELETE http://0.0.0.0:8080/player/46/character/3
+
+
+
+6.1 GET /player
+retrieve a list of all players
+response: title, id
+curl http://0.0.0.0:8080/player
+
+6.2 POST /player
+response: player detail {title, id, attributes(object),characters(array)}
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Moe","attributes":{"Job":"Bartender","Age":47}}' http://0.0.0.0:8080/player
+
+6.3  GET /player/<player_id>
+retrieve player details
+response: {title,id,attributes(object),characters(array)}
+curl http://0.0.0.0:8080/player/<player_id>
+curl https://calm-caverns-53016.herokuapp.com/player/<player_id>
+
+6.4  PUT /player/<player_id>
+response: 200 {title,id,attributes,characters}
+curl -X PUT -H "Content-Type: application/json" -d '{"title":"Han","attributes":{"shot first":"true","partner":"Chewy"}}' http://0.0.0.0:8080/player/10/
+
+
+6.5  DELETE /player/<player_id>
+delete a player
+response 204
+curl -X DELETE http://0.0.0.0:8080/player/<player_id> 
+
+
+
+7.1  GET /game/<game_id>/room
+retrieve all rooms
+response:200, {title, id}
+curl http://0.0.0.0:8080/game/123/room
+
+7.2 POST /game/<game_id>/room
+add a new room to a game
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Forest", "game_id":"123","description":"Looks like Endor", "attributes":{"land":"ferny","temp":"humid"}}' http://0.0.0.0:8080/game/123/room
+
+7.3 GET /game/<game_id>/room/<room_id>
+retrieve room details
+response: 200 {title,id,game_id,description,attributes(object)}
+curl http://0.0.0.0:8080/game/123/room/5
+
+7.4 PUT /game/<game_id>/room/<room_id>
+update room details
+response: 200 {title,id,dame_id,description,attributes}
+curl -X PUT -H "Content-Type: application/json" -d '{"title":"Bunker","game":"123","description":"Smells musty","attributes":{"area":600,"lights":4}}' http://0.0.0.0:8080/game/123/room/10
+
+7.5 DELETE /game/<game_id>/room/<room_id>
+curl -X DELETE http://0.0.0.0:8080/game/123/room/10
+
+
+
+
