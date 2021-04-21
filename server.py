@@ -288,35 +288,35 @@ def get_player_details(player_id):
   return_json = {"title":title, "id":player_id, "attributes":attributes, "characters":characters} 
   return jsonify(return_json), 200
 
-# 6.4 from Sarthak -- TEST THIS
-@app.route('/player/<player_id>',methods=['PUT'])
-def update_players(player_id):
+#6.4 Update player details 
+@app.route('/player/<player_id>', methods=['PUT'])
+def update_player(player_id):
   content = request.get_json()
   title = content['title']
-  characters=content['characters']#this is the array
-  attributes = content['attributes']#This is the object
-  with psycopg2.connect(players_db) as conn:
+  attributes = content['attributes']
+
+  with psycopg2.connect(players_db, sslmode='require') as conn:
     cursor = conn.cursor()
-    sqli_query = " UPDATE players SET title=%s WHERE players_id=%s"
-    query = cursor.execute(sqli_query,(title, players_id))
-    if not query:
-      abort(409, "Sorry did not update players")
-    #This is just deleting the updated id and replacing it with the new
-    #one
-    sqli_query = "DELETE FROM players WHERE players_id=%s"
-    query = cursor.execute(sqli_query, (players_id,))
-    if not query:
-      abort(409, "Sorry did not update players")
-    #This will loop through characters and update the player id and title
-    for i in characters:
-      sqli_query = "INSERT INTO characters (player_id, title) VALUES (%s,%s)"
-      query = cursor.execute(sqli_query, (player_id,i,characters[i]))
-      #Just an error message
-      if not query:
-        abort(409, "Could not create character")
-  if not query:
-    abort(409, "Could not update")
-  return  get_player_characters(player_id)
+    query = "UPDATE players SET title=%s WHERE players_id=%s"
+    cursor.execute(query,(title, player_id,))      
+    if cursor.rowcount == 0:
+      return flask.abort(409, "Could not update") 
+
+    query = "SELECT * FROM players_attributes WHERE player_id=%s;"
+    cursor.execute(query, (player_id,))
+    if cursor.rowcount != 0:
+      query = "DELETE FROM players_attributes WHERE player_id=%s;"
+      cursor.execute(query, (player_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update")
+    
+    for y in attributes:
+      query = "INSERT INTO players_attributes (player_id, attr_title, attr_value) VALUES (%s,%s,%s)"
+      cursor.execute(query, (player_id, y, attributes[y]))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update")
+  return get_player_details(player_id)
+
 
 # 6.5 DELETE player
 #remove a player -- return (204, "Player deleted")
@@ -401,6 +401,55 @@ def get_room_details(game_id, room_id):
   return_json = {"title":title, "id":room_id, "game_id":game_id, "description":description, "attributes":attributes} 
   return jsonify(return_json), 200
 
+#7.4 Update room details 
+@app.route('/game/<game_id>/room/<room_id>', methods=['PUT'])
+def update_room_details(game_id, room_id):
+  content = request.get_json()
+  title = content['title']
+  description = content['description']
+  attributes = content['attributes']
+
+  with psycopg2.connect(content_db, sslmode='require') as conn:
+    cursor = conn.cursor()
+    query = "SELECT * FROM rooms WHERE rooms_id=%s;"
+    cursor.execute(query, (room_id,))
+    if cursor.rowcount != 0:
+      query = "UPDATE rooms SET title=%s, description=%s WHERE rooms_id=%s;"
+      cursor.execute(query, (title, description, room_id))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+    query = "SELECT * FROM rooms_attributes WHERE room_id=%s;"
+    cursor.execute(query, (room_id,))
+    if cursor.rowcount != 0:
+      query = "DELETE FROM rooms_attributes WHERE room_id=%s;"
+      cursor.execute(query, (room_id,))
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+    
+    for k in attributes:
+      query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (%s,%s,%s)"
+      cursor.execute(query, (room_id, k, attributes[k]))      
+      if cursor.rowcount == 0:
+        return flask.abort(409, "Could not update room")
+  
+  return get_room_details(game_id, room_id)
+
+# 7.5 Delete room
+@app.route('/game/<game_id>/room/<room_id>', methods=['DELETE'])
+def delete_room(game_id, room_id):
+    data = request.get_json()
+    with psycopg2.connect(content_db, sslmode='require') as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM rooms_attributes WHERE room_id=%s;", (room_id,))
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms_attributes WHERE room_id=%s", (room_id,))
+      cursor.execute("SELECT * FROM rooms WHERE rooms_id=%s", (room_id,))
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms WHERE rooms_id=%s", (room_id,))
+      else:
+        return flask.abort(409, "Room does not exist")
+    return 'Room Deleted', 204
+
 
 #this method executes after every API request
 @app.after_request
@@ -414,4 +463,3 @@ def after_requestuest(response):
 
 if __name__ == '__main__':
     app.run(threaded=True, port=5000)
-
