@@ -323,6 +323,23 @@ def update_player(player_id):
     abort(409, "Could not update")
   return get_player_details(player_id)#calling 6.3 retreving player details
 
+#7.5 palyer can be deleted with attributes now
+@app.route('/game/<game_id>/room/<room_id>', methods=['DELETE'])
+def delete_room(game_id, room_id):
+    data = request.get_json()#access the lib
+    with psycopg2.connect(content_db, sslmode='require') as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM rooms_attributes WHERE room_id=%s;", (room_id,))#Select from the attributes first
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms_attributes WHERE room_id=%s", (room_id,))#delete from the attributes
+      cursor.execute("SELECT * FROM rooms WHERE rooms_id=%s", (room_id,))#select the room
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms WHERE rooms_id=%s", (room_id,))#delete the room
+      else:
+        return flask.abort(409, "Room does not exist")
+    return 'Room Deleted', 204
+
+
 
 # this method executes after every API request
 @app.after_request
