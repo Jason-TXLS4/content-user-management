@@ -10,10 +10,9 @@ import psycopg2
 
 app = Flask(__name__)
 
-# players_db = os.environ['DATABASE_URL']
-# content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
-players_db = "postgres://ccybprhsnhfxgx:b2ce8114ee71abcadd147b42a47b1caa4ae540ac946317a821d04098d40d4acf@ec2-107-20-153-39.compute-1.amazonaws.com:5432/d4b7p3avace43e"
-content_db = "postgres://hbwubwppwmylry:07310537702b404ca848a5c28e8f791fa4bb8abd942f81b8166ea505bf811620@ec2-34-225-103-117.compute-1.amazonaws.com:5432/deml8rlqer0tim"
+players_db = os.environ['DATABASE_URL']
+content_db = os.environ['HEROKU_POSTGRESQL_JADE_URL']
+
 
 @app.route('/')
 def sayHello():
@@ -419,7 +418,7 @@ def update_room_details(game_id, room_id):
       cursor.execute(query, (title, description, room_id))      
       if cursor.rowcount == 0:
         return flask.abort(409, "Could not update room")
-    query = "SELECT * FROM rooms_attributes WHERE rooms_id=%s;"
+    query = "SELECT * FROM rooms_attributes WHERE room_id=%s;"
     cursor.execute(query, (room_id,))
     if cursor.rowcount != 0:
       query = "DELETE FROM rooms_attributes WHERE room_id=%s;"
@@ -429,11 +428,27 @@ def update_room_details(game_id, room_id):
     
     for k in attributes:
       query = "INSERT INTO rooms_attributes (room_id, attr_title, attr_value) VALUES (%s,%s,%s)"
-      cursor.execute(sqli_query, (room_id, k, attributes[k]))      
+      cursor.execute(query, (room_id, k, attributes[k]))      
       if cursor.rowcount == 0:
         return flask.abort(409, "Could not update room")
   
   return get_room_details(game_id, room_id)
+
+# 7.5 Delete room
+@app.route('/game/<game_id>/room/<room_id>', methods=['DELETE'])
+def delete_room(game_id, room_id):
+    data = request.get_json()
+    with psycopg2.connect(content_db, sslmode='require') as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM rooms_attributes WHERE room_id=%s;", (room_id,))
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms_attributes WHERE room_id=%s", (room_id,))
+      cursor.execute("SELECT * FROM rooms WHERE rooms_id=%s", (room_id,))
+      if cursor.rowcount > 0:
+        cursor.execute("DELETE FROM rooms WHERE rooms_id=%s", (room_id,))
+      else:
+        return flask.abort(409, "Room does not exist")
+    return 'Room Deleted', 204
 
 
 #this method executes after every API request
@@ -441,10 +456,10 @@ def update_room_details(game_id, room_id):
 def after_requestuest(response):
   return response
 
-app.debug = True
-host = os.environ.get('OP', '0.0.0.0')
-port = int(os.environ.get('PORT', 8080))
-app.run(host=host, port=port)
+# app.debug = True
+# host = os.environ.get('OP', '0.0.0.0')
+# port = int(os.environ.get('PORT', 8080))
+# app.run(host=host, port=port)
 
-# if __name__ == '__main__':
-#     app.run(threaded=True, port=5000)
+if __name__ == '__main__':
+    app.run(threaded=True, port=5000)
